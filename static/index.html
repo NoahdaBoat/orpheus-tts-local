@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#080a12" />
+    <title>Orpheus Glass Chat</title>
+    <meta name="description" content="A private local voice chat for LM Studio and Orpheus TTS." />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="noise"></div>
+
+    <div class="app-shell">
+      <aside class="sidebar glass" id="sidebar" aria-label="Conversation history">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div>
+            <p class="eyebrow">LOCAL NEURAL AUDIO</p>
+            <h1>Orpheus</h1>
+          </div>
+          <button class="icon-button mobile-only" id="close-sidebar" aria-label="Close conversations">×</button>
+        </div>
+
+        <button class="new-chat-button" id="new-chat">
+          <span aria-hidden="true">＋</span>
+          New conversation
+        </button>
+
+        <div class="sidebar-label">
+          <span>Conversations</span>
+          <span id="chat-count">0</span>
+        </div>
+        <nav class="chat-list" id="chat-list" aria-live="polite"></nav>
+
+        <div class="server-card">
+          <div class="status-orb" id="status-orb"></div>
+          <div>
+            <strong id="server-status">Checking LM Studio</strong>
+            <span id="server-detail">localhost:1234</span>
+          </div>
+          <button class="icon-button" id="refresh-models" aria-label="Refresh LM Studio models">↻</button>
+        </div>
+      </aside>
+
+      <main class="chat-panel glass">
+        <header class="topbar">
+          <button class="icon-button mobile-only" id="open-sidebar" aria-label="Open conversations">☰</button>
+          <div class="conversation-heading">
+            <div class="live-pill" id="status-pill"><span></span> <em id="status-pill-label">OPEN</em></div>
+            <h2 id="active-title">New conversation</h2>
+            <p class="wiki-status-line" id="wiki-status-line" hidden></p>
+          </div>
+          <div class="topbar-actions">
+            <label class="chat-wiki-toggle" id="chat-wiki-toggle-wrap" title="Use Obsidian wiki for this conversation" hidden>
+              <input type="checkbox" id="chat-wiki-toggle" />
+              <span class="chat-wiki-toggle-ui"><i></i><em>Wiki</em></span>
+            </label>
+            <button class="lifecycle-button" id="end-chat" type="button" hidden>End</button>
+            <button class="lifecycle-button resume" id="resume-chat" type="button" hidden>Resume</button>
+            <button class="lifecycle-button wiki" id="wiki-sync" type="button" hidden title="Write conversation to Obsidian wiki">Sync</button>
+            <div class="model-chip" title="Current chat model">
+              <span class="model-chip-icon" aria-hidden="true">◇</span>
+              <span id="model-chip-text">No model selected</span>
+            </div>
+            <button class="settings-button" id="open-settings" aria-label="Open settings">
+              <span aria-hidden="true">⚙</span><span class="settings-label">Settings</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="messages" id="messages" aria-live="polite">
+          <div class="welcome" id="welcome">
+            <div class="orbital" aria-hidden="true">
+              <div class="orbit orbit-a"></div>
+              <div class="orbit orbit-b"></div>
+              <div class="core">O</div>
+            </div>
+            <p class="eyebrow">VOICE-LINK READY</p>
+            <h2>Speak with your local intelligence.</h2>
+            <p>Select a loaded LM Studio model, send a message, and Orpheus will give its answer a voice. End a conversation to write it into your Obsidian wiki.</p>
+            <div class="welcome-features">
+              <span>Streaming replies</span><span>On-device history</span><span>Neural speech</span><span>Obsidian wiki</span>
+            </div>
+          </div>
+        </section>
+
+        <footer class="composer-wrap">
+          <div class="generation-status" id="generation-status" hidden>
+            <span class="wave"><i></i><i></i><i></i><i></i></span>
+            <span id="generation-label">Thinking locally…</span>
+          </div>
+          <div class="lifecycle-banner" id="lifecycle-banner" hidden>
+            <div class="lifecycle-banner-text">
+              <strong id="lifecycle-banner-title">Conversation open</strong>
+              <span id="lifecycle-banner-detail">Send messages freely. End when you want to archive and write the wiki.</span>
+            </div>
+            <button type="button" class="lifecycle-banner-action" id="lifecycle-banner-action">End</button>
+          </div>
+          <form class="composer" id="composer-form">
+            <textarea
+              id="message-input"
+              rows="1"
+              maxlength="100000"
+              placeholder="Message your local model…"
+              aria-label="Message"
+            ></textarea>
+            <div class="composer-tools">
+              <span class="voice-badge" id="voice-badge">TARA VOICE</span>
+              <span class="key-hint">⌘ ↵</span>
+              <button class="stop-button" id="stop-button" type="button" hidden>Stop</button>
+              <button class="send-button" id="send-button" type="submit" aria-label="Send message">
+                <span>Send</span><b aria-hidden="true">↑</b>
+              </button>
+            </div>
+          </form>
+          <p class="privacy-note">Nothing leaves this machine except requests to your configured LM Studio server. Wiki writes stay on disk in your vault.</p>
+        </footer>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+    <aside class="settings-drawer glass" id="settings-drawer" aria-label="Settings" aria-hidden="true">
+      <div class="drawer-header">
+        <div><p class="eyebrow">CONTROL SURFACE</p><h2>Settings</h2></div>
+        <button class="icon-button" id="close-settings" aria-label="Close settings">×</button>
+      </div>
+      <form id="settings-form">
+        <section class="settings-section">
+          <div class="section-title"><span>Connection</span><small>LM Studio</small></div>
+          <label>Server URL<input name="base_url" type="url" required /></label>
+          <label>Chat model<select name="chat_model"></select><small class="lock-hint" id="model-lock-hint"></small></label>
+          <label>Orpheus model<select name="tts_model"></select></label>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-title"><span>Conversation</span><small>Behavior</small></div>
+          <label>System prompt<textarea name="system_prompt" rows="4" placeholder="Optional instructions for the chat model"></textarea><small class="lock-hint" id="prompt-lock-hint"></small></label>
+          <div class="field-grid">
+            <label>Temperature<input name="temperature" type="number" min="0" max="2" step="0.05" /></label>
+            <label>Top P<input name="top_p" type="number" min="0" max="1" step="0.05" /></label>
+          </div>
+          <label>Chat token limit (max response length)
+            <div class="token-limit-row">
+              <input name="chat_max_tokens" id="chat_max_tokens" type="number" min="32" max="32768" step="32" />
+              <label class="token-unlimited-toggle">
+                <input name="chat_tokens_unlimited" id="chat_tokens_unlimited" type="checkbox" />
+                <span>No limit</span>
+              </label>
+            </div>
+            <small class="lock-hint">Caps how long each reply can be. “No limit” matches LM Studio (−1). Not the context window.</small>
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-title"><span>Wiki (Obsidian)</span><small>Vault</small></div>
+          <label class="toggle-row">
+            <span><strong>Enable wiki</strong><small>Chat can read the vault; scribe writes on End</small></span>
+            <input name="wiki_enabled" type="checkbox" /><i></i>
+          </label>
+          <label>Vault folder path
+            <div class="path-picker-row">
+              <input name="wiki_vault_path" type="text" placeholder="/Users/you/Documents/MyVault" autocomplete="off" />
+              <button type="button" class="browse-folder-button" id="browse-vault" title="Choose folder">Browse…</button>
+            </div>
+          </label>
+
+          <label class="toggle-row">
+            <span><strong>Write on end</strong><small>Run the wiki scribe when you end a conversation</small></span>
+            <input name="wiki_auto_on_end" type="checkbox" /><i></i>
+          </label>
+          <div class="wiki-test-row">
+            <button type="button" class="test-vault-button" id="test-vault">Test vault</button>
+            <span id="wiki-test-result" class="wiki-test-result"></span>
+          </div>
+          <p class="settings-note">The scribe reuses your chat model (no second model is loaded). Keep only the chat model + Orpheus loaded in LM Studio. Wiki pages use [[wikilinks]] and optional LaTeX.</p>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-title"><span>Voice synthesis</span><small>Orpheus</small></div>
+          <label>Voice<select name="voice"></select></label>
+          <div class="field-grid">
+            <label>Repeat penalty<input name="repeat_penalty" type="number" min="1" max="2" step="0.05" /></label>
+            <label>TTS token limit
+              <div class="token-limit-row">
+                <input name="tts_max_tokens" id="tts_max_tokens" type="number" min="64" max="32768" step="64" />
+                <label class="token-unlimited-toggle">
+                  <input name="tts_tokens_unlimited" id="tts_tokens_unlimited" type="checkbox" />
+                  <span>No limit</span>
+                </label>
+              </div>
+              <small class="lock-hint">Caps Orpheus audio tokens per internal segment. Higher / unlimited allows longer continuous speech. Playback is always stitched into one clip.</small>
+            </label>
+          </div>
+          <label class="toggle-row">
+            <span><strong>Automatic playback</strong><small>Speak after the response finishes (one continuous clip)</small></span>
+            <input name="autoplay" type="checkbox" /><i></i>
+          </label>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-title"><span>Message sounds</span><small>Notifications</small></div>
+          <label class="toggle-row">
+            <span><strong>Enable sounds</strong><small>Play on send and receive</small></span>
+            <input name="message_sounds" type="checkbox" /><i></i>
+          </label>
+          <label class="toggle-row">
+            <span><strong>Mute</strong><small>Silence without forgetting your picks</small></span>
+            <input name="message_sounds_muted" type="checkbox" /><i></i>
+          </label>
+          <label>Volume
+            <div class="volume-row">
+              <input name="message_sound_volume" id="message_sound_volume" type="range" min="0" max="1" step="0.01" />
+              <span id="message-sound-volume-label">70%</span>
+            </div>
+          </label>
+          <label>Incoming sound
+            <div class="sound-picker-row">
+              <select name="message_sound_incoming" id="message_sound_incoming"></select>
+              <button type="button" class="preview-sound-button" id="preview-incoming" title="Preview">▶</button>
+            </div>
+          </label>
+          <label>Outgoing sound
+            <div class="sound-picker-row">
+              <select name="message_sound_outgoing" id="message_sound_outgoing"></select>
+              <button type="button" class="preview-sound-button" id="preview-outgoing" title="Preview">▶</button>
+            </div>
+          </label>
+        </section>
+
+        <p class="settings-note">The model and system prompt lock after the first message. New chats inherit these settings. Ended chats stay in the list until you delete them.</p>
+      </form>
+    </aside>
+
+    <div class="toast-region" id="toast-region" aria-live="assertive"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
