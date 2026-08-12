@@ -4,6 +4,7 @@ import json
 import tempfile
 import unittest
 import wave
+from collections.abc import Sequence
 from pathlib import Path
 from unittest.mock import patch
 
@@ -58,16 +59,35 @@ class HelpersTest(unittest.TestCase):
                 self.assertEqual(audio.getnframes(), 16)
 
     def test_model_discovery_prefers_loaded_models(self):
-        result = model_options({"models": [
-            {"type": "llm", "key": "chat-key", "display_name": "Chat", "loaded_instances": [{"id": "gemma-live", "config": {}}]},
-            {"type": "llm", "key": "tts-key", "display_name": "Voice", "loaded_instances": [{"id": "orpheus-live", "config": {}}]},
-            {"type": "embedding", "key": "embed", "loaded_instances": []},
-        ]})
+        result = model_options(
+            {
+                "models": [
+                    {
+                        "type": "llm",
+                        "key": "chat-key",
+                        "display_name": "Chat",
+                        "loaded_instances": [{"id": "gemma-live", "config": {}}],
+                    },
+                    {
+                        "type": "llm",
+                        "key": "tts-key",
+                        "display_name": "Voice",
+                        "loaded_instances": [{"id": "orpheus-live", "config": {}}],
+                    },
+                    {"type": "embedding", "key": "embed", "loaded_instances": []},
+                ]
+            }
+        )
         self.assertEqual(result["suggested_chat_model"], "gemma-live")
         self.assertEqual(result["suggested_tts_model"], "orpheus-live")
 
     def test_chat_end_helpers(self):
-        result = {"output": [{"type": "reasoning", "content": "hidden"}, {"type": "message", "content": "Hello"}]}
+        result = {
+            "output": [
+                {"type": "reasoning", "content": "hidden"},
+                {"type": "message", "content": "Hello"},
+            ]
+        }
         self.assertEqual(extract_chat_end_text(result), "Hello")
         self.assertIn("event: ready", sse("ready", {"ok": True}))
 
@@ -95,16 +115,22 @@ class StoreTest(unittest.TestCase):
     def test_settings_and_chat_round_trip(self):
         with tempfile.TemporaryDirectory() as directory:
             store = ChatStore(directory)
-            settings = store.save_settings({"chat_model": "gemma", "tts_model": "orpheus"})
+            settings = store.save_settings(
+                {"chat_model": "gemma", "tts_model": "orpheus"}
+            )
             self.assertEqual(settings["chat_model"], "gemma")
             chat = store.create_chat()
             self.assertEqual(chat["model_id"], "gemma")
             self.assertEqual(chat["status"], "open")
-            updated = store.update_chat(chat["id"], {"title": "A title", "system_prompt": "Be kind"})
+            updated = store.update_chat(
+                chat["id"], {"title": "A title", "system_prompt": "Be kind"}
+            )
             self.assertEqual(updated["system_prompt"], "Be kind")
             updated["messages"].append({"id": "one", "role": "user", "content": "Hi"})
             store.save_chat(updated)
-            locked = store.update_chat(chat["id"], {"model_id": "other", "system_prompt": "Changed"})
+            locked = store.update_chat(
+                chat["id"], {"model_id": "other", "system_prompt": "Changed"}
+            )
             self.assertEqual(locked["model_id"], "gemma")
             self.assertEqual(locked["system_prompt"], "Be kind")
             self.assertEqual(store.list_chats()[0]["title"], "A title")
@@ -123,7 +149,10 @@ class StoreTest(unittest.TestCase):
 
 
 class FakeDecoder:
-    def decode(self, multiframe):
+    def __init__(self) -> None:
+        self.last: list[int] = []
+
+    def decode(self, multiframe: Sequence[int]) -> bytes | None:
         self.last = list(multiframe)
         return b"\x00\x00" * 32
 
@@ -132,13 +161,13 @@ class FakeResponse:
     status_code = 200
     text = ""
 
-    def __init__(self, lines):
+    def __init__(self, lines: list[bytes]) -> None:
         self.lines = lines
 
-    def __enter__(self):
+    def __enter__(self) -> FakeResponse:
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> bool:
         return False
 
     def iter_lines(self):
@@ -152,14 +181,20 @@ class EngineTest(unittest.TestCase):
         )
         halfway = len(token_text) // 2
         fragments = [token_text[:halfway], token_text[halfway:]]
-        lines = [f"data: {json.dumps({'choices': [{'text': fragment}]})}".encode() for fragment in fragments]
+        lines = [
+            f"data: {json.dumps({'choices': [{'text': fragment}]})}".encode()
+            for fragment in fragments
+        ]
         lines.append(b"data: [DONE]")
         with tempfile.TemporaryDirectory() as directory, patch(
-            "orpheus_engine.requests.post", return_value=FakeResponse(lines)
+            "tts.engine.requests.post", return_value=FakeResponse(lines)
         ):
             path = Path(directory) / "voice.wav"
             size = OrpheusEngine(FakeDecoder()).synthesize_to_wav(
-                text="Hello", output_path=path, base_url="http://localhost:1234", model="orpheus"
+                text="Hello",
+                output_path=path,
+                base_url="http://localhost:1234",
+                model="orpheus",
             )
             self.assertGreater(size, 0)
             self.assertTrue(path.exists())
@@ -172,10 +207,14 @@ class ApiTest(unittest.TestCase):
                 self.assertEqual(client.get("/api/health").json(), {"status": "ok"})
                 created = client.post("/api/chats", json={}).json()
                 chat_id = created["id"]
-                renamed = client.patch(f"/api/chats/{chat_id}", json={"title": "Renamed"}).json()
+                renamed = client.patch(
+                    f"/api/chats/{chat_id}", json={"title": "Renamed"}
+                ).json()
                 self.assertEqual(renamed["title"], "Renamed")
                 self.assertEqual(client.get(f"/api/chats/{chat_id}").status_code, 200)
-                self.assertEqual(client.delete(f"/api/chats/{chat_id}").status_code, 204)
+                self.assertEqual(
+                    client.delete(f"/api/chats/{chat_id}").status_code, 204
+                )
                 self.assertEqual(client.get(f"/api/chats/{chat_id}").status_code, 404)
 
 

@@ -1,6 +1,6 @@
-"""Compatibility shim — implementation lives in the ``storage`` package."""
+"""Local JSON persistence for chats and settings."""
 
-from storage import (
+from storage.chat_store import (
     DEFAULT_SETTINGS,
     DEFAULT_WIKI,
     ChatStore,

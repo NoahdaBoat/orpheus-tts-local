@@ -51,18 +51,32 @@ def _pick_linux(initial: str | None) -> str | None:
 
     # Prefer zenity, then kdialog
     if _command_exists("zenity"):
-        cmd = ["zenity", "--file-selection", "--directory", "--title=Select Obsidian vault folder"]
+        cmd = [
+            "zenity",
+            "--file-selection",
+            "--directory",
+            "--title=Select Obsidian vault folder",
+        ]
         if start:
             cmd.append(f"--filename={start}/")
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=600, check=False
+        )
         if result.returncode != 0:
             return None
         path = (result.stdout or "").strip()
         return path or None
 
     if _command_exists("kdialog"):
-        cmd = ["kdialog", "--getexistingdirectory", start or str(Path.home()), "Select Obsidian vault folder"]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, check=False)
+        cmd = [
+            "kdialog",
+            "--getexistingdirectory",
+            start or str(Path.home()),
+            "Select Obsidian vault folder",
+        ]
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=600, check=False
+        )
         if result.returncode != 0:
             return None
         path = (result.stdout or "").strip()
@@ -120,15 +134,18 @@ def _pick_tkinter(initial: str | None) -> str | None:
         root.attributes("-topmost", True)
     except tk.TclError:
         pass
-    kwargs: dict = {"title": "Select Obsidian vault folder", "mustexist": True}
+    title = "Select Obsidian vault folder"
+    initialdir: str | None = None
     if initial:
         start = Path(initial).expanduser()
         if start.is_file():
             start = start.parent
         if start.is_dir():
-            kwargs["initialdir"] = str(start.resolve())
+            initialdir = str(start.resolve())
     try:
-        path = filedialog.askdirectory(**kwargs)
+        path = filedialog.askdirectory(
+            title=title, mustexist=True, initialdir=initialdir
+        )
     finally:
         root.destroy()
     return path or None

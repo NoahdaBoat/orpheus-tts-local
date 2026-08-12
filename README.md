@@ -131,19 +131,32 @@ Live LM Studio inference is intentionally not required by the automated tests.
 ## Project layout
 
 ```
-app.py              # FastAPI web app
-agent_runtime.py    # LM Studio tool-calling + streaming chat
-orpheus_engine.py   # Orpheus TTS client and WAV helpers
-decoder.py          # SNAC audio decoder
-chat_store.py       # Local JSON chat/settings persistence
-wiki_vault.py       # Sandboxed Obsidian vault tools
-wiki_scribe.py      # End-of-chat wiki write agent
-gguf_orpheus.py     # CLI entry point
-folder_picker.py    # Native folder dialog (macOS/Windows/Linux)
-static/             # Web UI
-tests/              # Unit tests (no live LM Studio required)
-examples/           # Sample WAVs
-data/               # Local runtime data (gitignored)
+app.py                 # Entry point (uvicorn app:app) — thin re-export
+gguf_orpheus.py        # CLI entry point
+decoder.py             # SNAC audio decoder
+folder_picker.py       # Native folder dialog (macOS/Windows/Linux)
+
+web/                   # FastAPI app package
+  factory.py           # create_app()
+  context.py           # Shared AppContext (store, jobs, engine)
+  schemas.py           # Request body models
+  helpers.py           # SSE helpers, model discovery, wiki checks
+  routes/              # HTTP route modules (system, chats, wiki, media)
+  services/            # Speech stream, chat stream, wiki jobs
+
+lm/                    # LM Studio client (completions + tool loop)
+tts/                   # Orpheus TTS engine, text prep, WAV
+wiki/                  # Obsidian vault sandbox, tools, scribe
+storage/               # Chat/settings JSON persistence
+
+# Compatibility shims (old import paths still work):
+agent_runtime.py, orpheus_engine.py, chat_store.py,
+wiki_vault.py, wiki_scribe.py
+
+static/                # Web UI
+tests/                 # Unit tests (no live LM Studio required)
+examples/              # Sample WAVs
+data/                  # Local runtime data (gitignored)
 ```
 
 ## License

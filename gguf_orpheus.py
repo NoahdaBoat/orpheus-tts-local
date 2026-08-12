@@ -8,11 +8,7 @@ import os
 import time
 from pathlib import Path
 
-from orpheus_engine import (
-    AVAILABLE_VOICES,
-    DEFAULT_VOICE,
-    OrpheusEngine,
-)
+from tts import AVAILABLE_VOICES, DEFAULT_VOICE, OrpheusEngine
 
 DEFAULT_BASE_URL = "http://127.0.0.1:1234"
 DEFAULT_MODEL = "orpheus-3b-0.1-ft"
@@ -82,7 +78,11 @@ def main() -> None:
     if args.list_voices:
         list_available_voices()
         return
-    text = args.text or " ".join(args.text_args) or input("Enter text to synthesize: ").strip()
+    text = (
+        args.text
+        or " ".join(args.text_args)
+        or input("Enter text to synthesize: ").strip()
+    )
     if not text:
         parser.error("Text is required")
     output = args.output or f"outputs/{args.voice}_{time.strftime('%Y%m%d_%H%M%S')}.wav"

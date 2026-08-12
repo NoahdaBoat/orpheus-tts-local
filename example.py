@@ -10,7 +10,9 @@ from gguf_orpheus import AVAILABLE_VOICES, generate_speech_from_api
 EXAMPLES_DIR = Path(__file__).resolve().parent / "examples"
 
 
-def text_to_speech(text: str, voice: str = "tara", output_file: str | Path | None = None) -> list[bytes]:
+def text_to_speech(
+    text: str, voice: str = "tara", output_file: str | Path | None = None
+) -> list[bytes]:
     """Convert text to speech and optionally write a WAV file."""
     print(f"Converting: '{text}' with voice '{voice}'")
     return generate_speech_from_api(

@@ -17,7 +17,10 @@ class WikiVaultTest(unittest.TestCase):
     def test_sandbox_and_crud(self):
         with tempfile.TemporaryDirectory() as directory:
             vault = WikiVault(directory)
-            vault.write_note("Concepts/Gravity.md", "# Gravity\n\nMass attracts mass. See [[Physics]].\n")
+            vault.write_note(
+                "Concepts/Gravity.md",
+                "# Gravity\n\nMass attracts mass. See [[Physics]].\n",
+            )
             vault.write_note("Physics.md", "# Physics\n\nLinks to [[Gravity]].\n")
             listed = vault.list_notes()
             self.assertEqual(listed["count"], 2)
@@ -110,14 +113,16 @@ class WikiApiTest(unittest.TestCase):
     def test_settings_accept_unlimited_chat_tokens(self):
         with tempfile.TemporaryDirectory() as directory:
             with TestClient(create_app(directory)) as client:
-                result = client.put("/api/settings", json={"chat_max_tokens": -1}).json()
+                result = client.put(
+                    "/api/settings", json={"chat_max_tokens": -1}
+                ).json()
                 self.assertEqual(result["chat_max_tokens"], -1)
                 bad = client.put("/api/settings", json={"chat_max_tokens": 0})
                 self.assertEqual(bad.status_code, 422)
 
     def test_pick_folder_cancelled(self):
         with tempfile.TemporaryDirectory() as directory:
-            with patch("app.pick_folder", return_value=None):
+            with patch("web.routes.wiki_routes.pick_folder", return_value=None):
                 with TestClient(create_app(directory)) as client:
                     result = client.post("/api/wiki/pick-folder").json()
                     self.assertTrue(result["cancelled"])
@@ -127,7 +132,7 @@ class WikiApiTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             vault = Path(directory) / "MyVault"
             vault.mkdir()
-            with patch("app.pick_folder", return_value=str(vault)):
+            with patch("web.routes.wiki_routes.pick_folder", return_value=str(vault)):
                 with TestClient(create_app(directory)) as client:
                     result = client.post("/api/wiki/pick-folder").json()
                     self.assertFalse(result["cancelled"])
@@ -153,7 +158,12 @@ class WikiApiTest(unittest.TestCase):
                 store = ChatStore(directory)
                 chat = store.get_chat(chat_id)
                 chat["messages"] = [
-                    {"id": "u", "role": "user", "content": "Talk about orbits", "created_at": "t"},
+                    {
+                        "id": "u",
+                        "role": "user",
+                        "content": "Talk about orbits",
+                        "created_at": "t",
+                    },
                     {
                         "id": "a",
                         "role": "assistant",
@@ -173,7 +183,9 @@ class WikiApiTest(unittest.TestCase):
                 resumed = client.post(f"/api/chats/{chat_id}/resume").json()
                 self.assertEqual(resumed["status"], "open")
 
-                toggled = client.patch(f"/api/chats/{chat_id}", json={"wiki_enabled": False}).json()
+                toggled = client.patch(
+                    f"/api/chats/{chat_id}", json={"wiki_enabled": False}
+                ).json()
                 self.assertFalse(toggled["wiki_enabled"])
                 blocked = client.post(f"/api/chats/{chat_id}/wiki-sync")
                 self.assertEqual(blocked.status_code, 422)
@@ -206,21 +218,29 @@ class WikiApiTest(unittest.TestCase):
                 )
                 return AgentResult(content="done")
 
-            with patch("wiki_scribe.run_tool_loop", side_effect=fake_run_tool_loop):
+            with patch("wiki.scribe.run_tool_loop", side_effect=fake_run_tool_loop):
                 chat = {
                     "id": "00000000-0000-0000-0000-000000000001",
                     "title": "Orbits chat",
                     "model_id": "gemma-local",
                     "messages": [
                         {"role": "user", "content": "What is an orbit?"},
-                        {"role": "assistant", "content": "A path around a body.", "status": "complete"},
+                        {
+                            "role": "assistant",
+                            "content": "A path around a body.",
+                            "status": "complete",
+                        },
                     ],
                 }
                 vault = WikiVault(vault_dir)
-                result = run_scribe(chat=chat, vault=vault, base_url="http://127.0.0.1:1234")
+                result = run_scribe(
+                    chat=chat, vault=vault, base_url="http://127.0.0.1:1234"
+                )
                 self.assertTrue((vault_dir / "Conversations" / "Test.md").exists())
                 self.assertTrue((vault_dir / "Concepts" / "Orbits.md").exists())
-                self.assertIn("Conversations/Test.md", getattr(result, "pages_touched", []))
+                self.assertIn(
+                    "Conversations/Test.md", getattr(result, "pages_touched", [])
+                )
 
 
 if __name__ == "__main__":

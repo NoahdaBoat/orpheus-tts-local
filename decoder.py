@@ -92,9 +92,10 @@ class SNACDecoder:
 _DECODER = SNACDecoder()
 
 
-def convert_to_audio(multiframe: Sequence[int], count: int | None = None) -> bytes | None:
+def convert_to_audio(
+    multiframe: Sequence[int], count: int | None = None
+) -> bytes | None:
     """Compatibility wrapper used by the CLI and older imports."""
 
     del count
     return _DECODER.decode(multiframe)
-
